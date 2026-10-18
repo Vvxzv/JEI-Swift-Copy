@@ -4,8 +4,8 @@ import com.mojang.blaze3d.platform.InputConstants;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.common.input.IInternalKeyMappings;
-import mezz.jei.gui.input.IUserInputHandler;
-import mezz.jei.gui.input.UserInput;
+import mezz.jei.common.input.UserInput;
+import mezz.jei.common.input.interaction.IInputInteraction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
@@ -24,22 +24,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
 
-@Mixin(targets = "mezz.jei.gui.recipes.RecipeLayoutWithButtons$RecipeLayoutUserInputHandler", remap = false)
+@Mixin(targets = "mezz.jei.gui.recipes.RecipeLayoutWithButtons$RecipeLayoutInputTarget")
 public class RecipeLayoutUserInputHandlerMixin<R> {
     @Shadow
     @Final
     private IRecipeLayoutDrawable<R> recipeLayout;
 
     @Inject(
-            method = "handleUserInput",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lmezz/jei/common/Internal;getKeyMappings()Lmezz/jei/common/input/IInternalKeyMappings;",
-                    shift = At.Shift.AFTER
-            ),
+            method = "beginInput",
+            at = @At("HEAD"),
             cancellable = true
     )
-    private void test(Screen screen, UserInput input, IInternalKeyMappings keyBindings, CallbackInfoReturnable<Optional<IUserInputHandler>> cir) {
+    private void test(Screen screen, UserInput input, IInternalKeyMappings keyBindings, CallbackInfoReturnable<Optional<IInputInteraction>> cir) {
         InputConstants.Key key = input.getKey();
         if(!KeyMappingUtil.KEYMAPPING.isActiveAndMatches(key)) {
             return;
@@ -59,7 +55,6 @@ public class RecipeLayoutUserInputHandlerMixin<R> {
         ResourceLocation registryName = recipeCategory.getRegistryName(recipe);
         if (registryName != null) {
             ICopyJsonHandler.handler(server, minecraft, registryName);
-            cir.setReturnValue(Optional.of((IUserInputHandler) this));
             return;
         }
         if (player != null) {
